@@ -25,7 +25,8 @@ class movDado:
             cursor.close()
 
     @staticmethod
-    def insert_venda(val1, val2, val3, val4, val5, val6, val7, cursor):
+    def insert_venda(val1, val2, val3, val4, val5, val6, val7):
+        cursor = conn.cursor()
         try:
             if val1.isdate():
                 if not val2.isnumeric():
@@ -61,7 +62,8 @@ class movDado:
             cursor.close()
 
     @staticmethod
-    def insert_livro(val1, val2, val3, cursor):
+    def insert_livro(val1, val2, val3):
+        cursor = conn.cursor()
         try:
             sql = "INSERT INTO LIVROS(TITULO, AUTOR, EDITORA) VALUES (?, ?, ?)"
             cursor.execute(sql, (val1, val2, val3))
@@ -72,7 +74,8 @@ class movDado:
             cursor.close()
     
     @staticmethod
-    def select_clientes(val1, val2, cursor):
+    def select_clientes(val1, val2):
+        cursor = conn.cursor()
         try:
             if val1 != None:
                 sql = f"SELECT * FROM CLIENTE WHERE {val1} = ?"
@@ -86,7 +89,8 @@ class movDado:
             cursor.close()
 
     @staticmethod
-    def select_venda(val1, val2, val3, val4, cursor):
+    def select_venda(val1, val2, val3 = None, val4 = None):
+        cursor = conn.cursor()
         try:
             if val1:
                 if val3 == "LIVRO":
@@ -94,7 +98,7 @@ class movDado:
                     cursor.prepare(tabela)
                     livro_id = cursor.execute(None, ()).fetchone()
                 elif val4 == "CLIENTE":
-                    tabela = "SELECT ID FROM CLIENTE WHERE NOME = {val4}"
+                    tabela = "SELECT ID FROM CLIENTE WHERE NOME = %{val4}%"
                     cursor.prepare(tabela)
                     cliente_id = cursor.execute(None, ()).fetchone()
                 if val1.upper() == "QUANTIDADE":
@@ -112,7 +116,8 @@ class movDado:
             cursor.close()
 
     @staticmethod
-    def select_livro(val1, val2, cursor):
+    def select_livro(val1, val2):
+        cursor = conn.cursor()
         try:
             if val1:
                 sql = f"SELECT * FROM LIVROS WHERE {val1} = ?"
@@ -126,7 +131,8 @@ class movDado:
             cursor.close()
 
     @staticmethod
-    def delete_cliente(val1, cursor):
+    def delete_cliente(val1):
+        cursor = conn.cursor()
         try:
             if val1.isnumeric():
                 sql = "DELETE FROM CLIENTE WHERE ID = ?"
@@ -145,7 +151,8 @@ class movDado:
             cursor.close()
 
     @staticmethod
-    def delete_venda(val1, cursor):
+    def delete_venda(val1):
+        cursor = conn.cursor()
         try:
             if val1.isnumeric():
                 sql = "DELETE FROM CLIENTE WHERE ID = ?"
@@ -164,7 +171,8 @@ class movDado:
             cursor.close()
     
     @staticmethod
-    def delete_livro(val1, cursor):
+    def delete_livro(val1):
+        cursor = conn.cursor()
         try:
             if val1.isnumeric():
                 sql = "DELETE FROM LIVRO WHERE ID = ?"
@@ -181,6 +189,7 @@ class movDado:
             cursor.commit()
         
 def valid_livro(val1):
+    cursor = conn.cursor()
     cursor = conn.cursor()
     try:
         sql = f"SELECT NOME FROM LIVROS WHERE ID = {val1}"
