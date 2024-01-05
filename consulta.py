@@ -1,6 +1,23 @@
-import conn
+import mysql.connector
 
 class movDado:
+
+    conn = None
+
+    @classmethod
+    def connect(cls):
+        host = "localhost"
+        user = "root"
+        password = ""
+        database = "project"
+
+        cls.conn = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database
+        )
+
     def __init__(self):
         self.val1 = None
         self.val2 = None
@@ -9,192 +26,364 @@ class movDado:
         self.val5 = None
         self.val6 = None
         self.val7 = None
-        self.cursor = conn.cursor()
 
+
+    #Ok
     @staticmethod
     def insert_client(val1, val2, val3):
-        cursor = conn.cursor()
         try:
-            sql = "INSERT INTO CLIENTE(NOME, CNPJ, EMPRESA) VALUES (?, ?, ?)"
+            if movDado.conn is None:
+                movDado.connect()
+            cursor = movDado.conn.cursor()
+            sql = "INSERT INTO CLIENTE(NOME, CNPJ, EMPRESA) VALUES (%s, %s, %s)"
             cursor.execute(sql, (val1, val2, val3))
-            conn.commit()
+            movDado.conn.commit()
         except Exception as e:
-            conn.rollback()
+            movDado.conn.rollback()
             print(f"Error: {e}")
         finally:
             cursor.close()
 
-    @staticmethod
-    def insert_venda(val1, val2, val3, val4, val5, val6, val7):
-        cursor = conn.cursor()
+    #Ok
+    @classmethod
+    def select_venda(cls, val1=None, val2=None):
         try:
-            if val1.isdate():
-                if not val2.isnumeric():
-                    id_Client = cursor.execute("SELECT ID FROM CLIENTE WHERE NOME = ?", (val2,)).fetchone()
-                    if val3.isnumeric():
-                        if val4.isnumeric() and val5.isnumeric():
-                            if isinstance(val6, str): 
-                                if not val7.isnumeric():
-                                    id_Livro = cursor.execute("SELECT ID FROM LIVRO WHERE NOME = ?", (val7,)).fetchone()
-                                    sql = '''
-                                        INSERT INTO VENDASLIVROS(DATA_VENDA, LIVRO_ID, QUANTIDADE,
-                                        PRECO_UNITARIO, TOTAL, METODO_PAGAMENTO, CLIENTE_ID)
-                                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                                    '''
-                                    cursor.execute(sql, (val1, id_Livro[0], val3, val4, val5, val6, id_Client[0]))
-                                    conn.commit()
-                                else:
-                                    print("val7 should not be numeric.")
-                            else:
-                                print("val6 should be a string.")
+            cls.connect()
+            cursor = cls.conn.cursor()
+
+            while True:
+                if val1:
+                    if val1.upper() == "LIVRO":
+                        sql = "SELECT ID FROM LIVRO WHERE ID = %s"
+                        cursor.execute(sql, (val2,))
+                        livro_id = cursor.fetchone()
+                        if livro_id:
+                            sql = f"SELECT * FROM VENDASLIVROS WHERE LIVRO_ID = %s"
+                            cursor.execute(sql, (livro_id[0],))
+                            results = cursor.fetchall()
+                            total_results = cursor.rowcount
+
+                            if total_results == 0:
+                                print("Nenhum resultado encontrado.")
+                                return []
+
+                            for result in results:
+                                print(result)
+
+                            if len(results) == total_results:
+                                break
                         else:
-                            print("val4 and val5 should be numeric.")
+                            print("Livro não encontrado.")
+                            return []
+                    elif val1.upper() == "CLIENTE":
+                        sql = "SELECT ID FROM CLIENTE WHERE NOME LIKE %s"
+                        cursor.execute(sql, (f"%{val2}%",))
+                        cliente_id = cursor.fetchone()
+                        if cliente_id:
+                            sql = f"SELECT * FROM VENDASLIVROS WHERE CLIENTE_ID = %s"
+                            cursor.execute(sql, (cliente_id[0],))
+                            results = cursor.fetchall()
+                            total_results = cursor.rowcount
+
+                            if total_results == 0:
+                                print("Nenhum resultado encontrado.")
+                                return []
+
+                            for result in results:
+                                print(result)
+
+                            if len(results) == total_results:
+                                break
+                        else:
+                            print("Cliente não encontrado.")
+                            return []
+                    elif val1.upper() == "QUANTIDADE":
+                        sql = "SELECT * FROM QUANTIDADE WHERE NOME_LIVRO = %s"
+                        cursor.execute(sql, (val2,))
+                        results = cursor.fetchall()
+                        total_results = cursor.rowcount
+
+                        if total_results == 0:
+                            print("Nenhum resultado encontrado.")
+                            return []
+
+                        for result in results:
+                            print(result)
+
+                        if len(results) == total_results:
+                            break
+                    elif val1.upper() == "METODO PAGAMENTO":
+                        sql = "SELECT * FROM VENDASLIVROS WHERE METODO_PAGAMENTO LIKE %s"
+                        cursor.execute(sql, (f"%{val2}%",))
+                        results = cursor.fetchall()
+                        total_results = cursor.rowcount
+
+                        if total_results == 0:
+                            print("Nenhum resultado encontrado.")
+                            return []
+
+                        for result in results:
+                            print(result)
+
+                        if len(results) == total_results:
+                            break
                     else:
-                        print("val3 should be numeric.")
+                        print("Opção inválida.")
+                        return []
                 else:
-                    print("val2 should not be numeric.")
-            else:
-                print("val1 should be a date.")
-        except Exception as e:
-            conn.rollback()
-            print(f"Error {e}")
-        finally:
-            cursor.close()
+                    sql = "SELECT * FROM VENDASLIVROS"
+                    cursor.execute(sql)
+                    results = cursor.fetchall()
+                    total_results = cursor.rowcount
 
-    @staticmethod
-    def insert_livro(val1, val2, val3):
-        cursor = conn.cursor()
+                    if total_results == 0:
+                        print("Nenhum resultado encontrado.")
+                        return []
+
+                    for result in results:
+                        print(result)
+
+                    if len(results) == total_results:
+                        break
+
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            if cursor:
+                cursor.close()
+
+
+    #OK
+    @classmethod
+    def insert_livro(cls, val1, val2, val3):
         try:
-            sql = "INSERT INTO LIVROS(TITULO, AUTOR, EDITORA) VALUES (?, ?, ?)"
+            cls.connect()  
+            cursor = cls.conn.cursor()
+            sql = "INSERT INTO LIVROS(NOME, AUTOR, EDITORA) VALUES (%s, %s, %s)"
             cursor.execute(sql, (val1, val2, val3))
-            conn.commit()
+            cls.conn.commit()
         except Exception as e:
             print(f"Error: {e}")
         finally:
-            cursor.close()
-    
-    @staticmethod
-    def select_clientes(val1, val2):
-        cursor = conn.cursor()
+            if cursor:
+                cursor.close()
+  
+    #Ok
+    @classmethod
+    def select_clientes(cls, val1=None, val2=None):
+        cursor = None
         try:
-            if val1 != None:
-                sql = f"SELECT * FROM CLIENTE WHERE {val1} = ?"
-                return cursor.execute(sql, (val2,)).fetchall()
-            else:
-                sql = "SELECT * FROM CLIENTE"
-            return cursor.execute(sql).fetchall()
+            if cls.conn is None:
+                cls.connect()  
+            cursor = cls.conn.cursor()
+            while True:
+                try:
+                    if val1 is not None and val2 is not None:
+                        sql = f"SELECT * FROM CLIENTE WHERE {val1} LIKE %s"
+                        search_term = f"%{val2}%"
+                        cursor.execute(sql, (search_term,))
+                        results = cursor.fetchall()
+                        total_results = cursor.rowcount  # Total de resultados encontrados
+
+                        if total_results == 0:
+                            print("Nenhum resultado encontrado.")
+                        else:
+                            for result in results:
+                                print(result)
+                            print(f"Total de resultados encontrados: {total_results}")
+
+                            # Se o número de resultados exibidos for igual ao total, saia do loop
+                            if len(results) == total_results:
+                                break
+
+                    elif val1 is None and val2 is None:
+                        sql = "SELECT * FROM CLIENTE"
+                        cursor.execute(sql)
+                        results = cursor.fetchall()
+                        total_results = cursor.rowcount  
+
+                        if total_results == 0:
+                            print("Nenhum cliente encontrado.")
+                        else:
+                            for result in results:
+                                print(result)
+                            print(f"Total de clientes encontrados: {total_results}")
+
+                            # Se o número de resultados exibidos for igual ao total, saia do loop
+                            if len(results) == total_results:
+                                break
+                except Exception as e:
+                    print(f"Error: {e}")
         except Exception as e:
             print(f"Error: {e}")
         finally:
-            cursor.close()
+            if cursor:
+                cursor.close()
 
-    @staticmethod
-    def select_venda(val1, val2, val3 = None, val4 = None):
-        cursor = conn.cursor()
+
+        @classmethod
+        def select_venda(cls, val1=None, val2=None):
+            try:
+                cls.connect()
+                cursor = cls.conn.cursor()
+
+                if val1:
+                    if val1.upper() == "LIVRO":
+                        sql = "SELECT ID FROM LIVRO WHERE ID = %s"
+                        cursor.execute(sql, (val2,))
+                        livro_id = cursor.fetchone()
+                        if livro_id:
+                            sql = f"SELECT * FROM VENDASLIVROS WHERE LIVRO_ID = %s"
+                            cursor.execute(sql, (livro_id[0],))
+                            return cursor.fetchall()
+                        else:
+                            print("Livro não encontrado.")
+                            return []
+                    elif val1.upper() == "CLIENTE":
+                        sql = "SELECT ID FROM CLIENTE WHERE NOME LIKE %s"
+                        cursor.execute(sql, (f"%{val2}%",))
+                        cliente_id = cursor.fetchone()
+                        if cliente_id:
+                            sql = f"SELECT * FROM VENDASLIVROS WHERE CLIENTE_ID = %s"
+                            cursor.execute(sql, (cliente_id[0],))
+                            return cursor.fetchall()
+                        else:
+                            print("Cliente não encontrado.")
+                            return []
+                    elif val1.upper() == "QUANTIDADE":
+                        sql = "SELECT * FROM QUANTIDADE WHERE NOME_LIVRO = %s"
+                        cursor.execute(sql, (val2,))
+                        return cursor.fetchall()
+                    elif val1.upper() == "METODO PAGAMENTO":
+                        sql = "SELECT * FROM VENDASLIVROS WHERE METODO_PAGAMENTO LIKE %s"
+                        cursor.execute(sql, (f"%{val2}%",))
+                        return cursor.fetchall()
+                    else:
+                        print("Opção inválida.")
+                        return []
+                else:
+                    sql = "SELECT * FROM VENDASLIVROS"
+                    cursor.execute(sql)
+                    return cursor.fetchall()
+            except Exception as e:
+                print(f"Error: {e}")
+            finally:
+                if cursor:
+                    cursor.close()
+
+
+
+
+    #Ok
+    @classmethod
+    def select_livro(cls, val1=None, val2=None):
         try:
-            if val1:
-                if val3 == "LIVRO":
-                    tabela = "SELECT ID FROM LIVRO = {val4}"
-                    cursor.prepare(tabela)
-                    livro_id = cursor.execute(None, ()).fetchone()
-                elif val4 == "CLIENTE":
-                    tabela = "SELECT ID FROM CLIENTE WHERE NOME = %{val4}%"
-                    cursor.prepare(tabela)
-                    cliente_id = cursor.execute(None, ()).fetchone()
-                if val1.upper() == "QUANTIDADE":
-                    tabela = "SELECT * FROM QUANTIDADE WHERE NOME_LIVRO = {val2};"
-                    return cursor.execute(sql, (val2,)).fetchall()
-                sql = f"SELECT * FROM VENDASLIVROS WHERE {val1} = ?"
-                if val1 != "QUANTIDADE":
-                    return cursor.execute(sql, (val2,)).fetchall()
-            else:
-                sql = "SELECT * FROM VENDA"
-                return cursor.execute(sql).fetchall()
+            cls.connect()
+            cursor = cls.conn.cursor()
+
+            while True:
+                if val1:
+                    sql = f"SELECT * FROM LIVROS WHERE {val1} = %s"
+                    cursor.execute(sql, (val2,))
+                    results = cursor.fetchall()
+                    total_results = cursor.rowcount
+                    if results:
+                        for result in results:
+                            print(result)
+                    else:
+                        print("Nenhum resultado encontrado.")
+                    if len(results) == total_results:
+                        break
+                else:
+                    sql = "SELECT * FROM LIVROS"
+                    cursor.execute(sql)
+                    results = cursor.fetchall()
+                    if results:
+                        for result in results:
+                            print(result)
+                    else:
+                        print("Nenhum livro encontrado.")
+                    break  # Apenas uma consulta é necessária quando val1 é None
+
         except Exception as e:
             print(f"Error: {e}")
         finally:
-            cursor.close()
+            if cursor:
+                cursor.close()
 
-    @staticmethod
-    def select_livro(val1, val2):
-        cursor = conn.cursor()
-        try:
-            if val1:
-                sql = f"SELECT * FROM LIVROS WHERE {val1} = ?"
-                return cursor.execute(sql, (val2,)).fetchall()
-            else:
-                sql = "SELECT * FROM LIVROS"
-                return cursor.execute(sql).fetchall()
-        except Exception as e:
-            print(f"Error: {e}")
-        finally:
-            cursor.close()
-
+    #Ok
     @staticmethod
     def delete_cliente(val1):
-        cursor = conn.cursor()
         try:
+            if movDado.conn is None:
+                movDado.connect()
+            cursor = movDado.conn.cursor()
             if val1.isnumeric():
-                sql = "DELETE FROM CLIENTE WHERE ID = ?"
+                sql = "DELETE FROM CLIENTE WHERE ID = %s"
                 cursor.execute(sql, (val1,))
+                movDado.conn.commit()
             else:
-                id = cursor.execute("SELECT ID FROM CLIENTE WHERE NOME = ?", (val1,)).fetchone()
+                id = cursor.execute("SELECT ID FROM CLIENTE WHERE NOME = %s", (val1,)).fetchone()
                 if id:
-                    sql = "DELETE FROM CLIENTE WHERE ID = ?"
+                    sql = "DELETE FROM CLIENTE WHERE ID = %s"
                     cursor.execute(sql, (id[0],))
                 else:
                     print("Cliente não encontrado.")
                     return None
         except Exception as e:
+            movDado.conn.rollback()
             print(f"Erro ao deletar cliente: {e}")
         finally:
-            cursor.close()
+            if cursor:
+                cursor.close()
 
+    #Ok
     @staticmethod
     def delete_venda(val1):
-        cursor = conn.cursor()
         try:
-            if val1.isnumeric():
-                sql = "DELETE FROM CLIENTE WHERE ID = ?"
-                cursor.execute(sql, (val1,))
-            else:
-                id = cursor.execute("SELECT ID FROM CLIENTE WHERE NOME = ?", (val1,)).fetchone()
-                if id:
-                    sql = "DELETE FROM CLIENTE WHERE ID = ?"
-                    cursor.execute(sql, (id[0],))
-                else:
-                    print("Essa venda não foi realizada antes")
-                    return None
+            if movDado.conn is None:
+                movDado.connect()
+            val1 = int(val1)
+            cursor = movDado.conn.cursor()
+            sql = "DELETE FROM VENDASLIVROS WHERE ID = %s"
+            cursor.execute(sql, (val1,))
+            movDado.conn.commit()
         except Exception as e:
+            movDado.conn.rollback()
             print(f"Erro na exclusão da venda: {e}")
         finally:
-            cursor.close()
-    
+            if cursor:
+                cursor.close()
+
+    #Ok
     @staticmethod
     def delete_livro(val1):
-        cursor = conn.cursor()
         try:
+            if movDado.conn is None:
+                movDado.connect()
+            cursor = movDado.conn.cursor()
             if val1.isnumeric():
-                sql = "DELETE FROM LIVRO WHERE ID = ?"
+                sql = "DELETE FROM LIVROs WHERE ID = %s"
                 cursor.execute(sql, (val1,))
+                movDado.conn.commit()
             else:
-                if id:
-                    sql = "DELETE FROM CLIENTE WHERE ID = ?"
-                    cursor.execute(sql, (id[0],))
-                print(f"Esse livro não existe no sistema")
-                return None
+                sql = "DELETE FROM LIVROs WHERE NOME = %s"
+                cursor.execute(sql, (val1,))
+                movDado.conn.commit()
         except Exception as e:
+            movDado.conn.rollback()
             print(f"Erro ao excluir o livro do estoque: {e}")
         finally:
-            cursor.commit()
-        
-def valid_livro(val1):
-    cursor = conn.cursor()
-    cursor = conn.cursor()
-    try:
-        sql = f"SELECT NOME FROM LIVROS WHERE ID = {val1}"
-        return cursor.execute(sql).fetchall()
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        cursor.close()
+            if cursor:
+                cursor.close()
+
+
+
+    #Ok
+    @classmethod
+    def close_connection(cls):
+        if cls.conn:
+            cls.conn.close()
+            cls.conn = None
+
+
